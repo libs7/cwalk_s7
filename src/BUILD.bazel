@@ -1,0 +1,81 @@
+package(default_visibility = ["//visibility:public"])
+
+exports_files(["libcwalk_clibgen.scm"])
+
+load("@libs7//:BUILD.bzl", "BASE_COPTS")
+load("@libs7//lib:BUILD.bzl", "clibgen_runner")
+
+load("//:BUILD.bzl", "CWALK_VERSION", "CWALK_S7_VERSION", "LIBS7_VERSION")
+
+# load("//:BUILD.bzl",
+#      "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+#      "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS",
+#      "CWALK_VERSION",
+#      "LIBS7_VERSION")
+
+# load("//lib:BUILD.bzl", "clibgen_runner",
+#      "CLIB_SRCS", "CLIB_INCLUDE_PATHS", "CLIB_COPTS", "CLIB_LINKOPTS")
+
+SRCS = ["@libs7//src:s7.h"]
+# SRCS          = BASE_SRCS + CLIB_SRCS
+
+INCLUDE_PATHS = [
+    "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+    "-Iexternal/cwalk~{}/include".format(CWALK_VERSION),
+    # "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION),
+    # when built within libs7 repo, this is needed:
+    "-Isrc"
+]
+# INCLUDE_PATHS = BASE_INCLUDE_PATHS + CLIB_INCLUDE_PATHS + [
+#     "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+#     "-Iexternal/cwalk~{}/include".format(CWALK_VERSION),
+# ]
+
+COPTS         = BASE_COPTS + INCLUDE_PATHS
+# COPTS         = BASE_COPTS + CLIB_COPTS + INCLUDE_PATHS
+
+DEPS          = ["@libs7//src:s7", "@cwalk//src:cwalk"]
+    # "@liblog_cc//src:logc",
+
+# DEPS          = BASE_DEPS + ["@cwalk//src:cwalk"]
+
+# DEFINES       = BASE_DEFINES
+# LINKOPTS      = BASE_LINKOPTS + CLIB_LINKOPTS
+
+################################################################
+cc_library(
+    name            = "cwalk_s7",
+    linkstatic      = True,
+    alwayslink      = True, # ensure init fn sym available for dlsym
+    srcs            = SRCS + [
+        # ":libcwalk_s7_runbin"
+        ":libcwalk_s7.c"
+    ],
+    deps            = DEPS,
+    copts           = COPTS,
+    # linkopts      = LINKOPTS,
+    # local_defines = DEFINES
+)
+
+cc_shared_library(
+    name            = "cwalk_s7_dso",  # create libcwalk_s7.{dylib,so}
+    shared_lib_name = select({
+        "@platforms//os:macos": "libcwalk_s7.dylib",
+        "@platforms//os:linux": "libcwalk_s7.so",
+        # "@platforms//os:windows": "libcwalk_s7.dll",
+        "//conditions:default": "libcwalk_s7.so"
+    }),
+    deps            = [":cwalk_s7"]
+)
+
+clibgen_runner(
+    name = "libcwalk_s7_runbin",
+    # tool = "//lib:clibgen",
+    args = ["--script", "$(location libcwalk_clibgen.scm)"],
+    srcs = [":libcwalk_clibgen.scm"],
+            # "@libs7//lib:clibgen.scm"],
+    outs = [
+        # "external/libs7~0.1.0/src/libcwalk_s7.c"
+        ":libcwalk_s7.c"
+    ]
+)
