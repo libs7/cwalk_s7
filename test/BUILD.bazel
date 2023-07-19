@@ -1,0 +1,96 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+load("@libs7//:BUILD.bzl",
+     "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
+
+load("//test:BUILD.bzl",
+     "TEST_SRCS", "TEST_DEPS", "TEST_INCLUDE_PATHS",
+     "TEST_COPTS", "TEST_DEFINES", "TEST_LINKOPTS",
+     "TIMEOUT")
+
+SRCS          = BASE_SRCS + TEST_SRCS
+INCLUDE_PATHS = BASE_INCLUDE_PATHS + TEST_INCLUDE_PATHS
+COPTS         = BASE_COPTS + TEST_COPTS + INCLUDE_PATHS
+DEPS          = BASE_DEPS + TEST_DEPS
+DEFINES       = BASE_DEFINES + TEST_DEFINES
+LINKOPTS      = BASE_LINKOPTS + TEST_LINKOPTS
+
+################################################################
+exports_files(["common.c", "common.h"])
+
+test_suite(
+    name  = "test",
+    tests = [
+        ":cwalk_s7_archive",
+    ]
+)
+
+cc_test(
+    name = "cwalk_s7_test",
+    linkstatic = True,
+    srcs = SRCS + ["cwalk_test.c", "common.c", "common.h"],
+    local_defines = DEFINES,
+    deps = DEPS + [
+        "//src:cwalk_s7"
+        # "//lib/libcwalk:cwalk_s7_archive"
+    ],
+    copts = COPTS,
+    linkopts = LINKOPTS,
+    timeout  = TIMEOUT,
+)
+
+cc_test(
+    name = "cwalk_s7_shared_test",
+    linkstatic = True,
+    srcs = SRCS + [
+        "cwalk_test.c", "common.c", "common.h",
+        "//src:cwalk_s7_dso",
+    ],
+    local_defines = DEFINES,
+    data = ["//src:cwalk_s7_dso"],
+    deps = DEPS + [
+        # "//lib/libcwalk:cwalk_s7"
+    ],
+    copts = COPTS,
+    linkopts = LINKOPTS,
+    timeout  = TIMEOUT,
+)
+
+# cc_test(
+#     name = "cwalk_s7",
+#     linkstatic = True,
+#     srcs = SRCS + ["cwalk_test.c"] + select({
+#         # "//config/clibs/linktime:load?": [
+#         "//config/clibs/link:shared?": [
+#             "//lib/libcwalk:cwalk_s7.c" ## , "//lib/libcwalk:libcwalk_s7.h",
+#         ],
+#         "//conditions:default": []
+#     }),
+#     local_defines = DEFINES,
+#     deps = DEPS + select({
+#         # "//config/clibs/linktime:build?": [
+#         "//config/clibs/link:archive?": [
+#             "@cwalk_s7//src:cwalk_s7"
+#             # "//lib/libcwalk:cwalk_s7"
+#         ],
+#         # "//config/clibs/linktime:load?": [
+#         #     "//lib/libcwalk:cwalk_s7_dso"],
+#         "//conditions:default": []
+#     }),
+#     data = select({
+#         # "//config/clibs/linktime:run?": [
+#         "//config/clibs/link:runtime?": [
+#             "@cwalk_s7//src:cwalk_s7_dso"
+#             # "//lib/libcwalk:cwalk_s7_dso"
+#         ],
+#         "//conditions:default": []
+#     }),
+#     copts = COPTS + [
+#         # "-I$(GENDIR)/lib/libcwalk",
+#         # "-I$(GENDIR)/external/libs7/lib/libcwalk",
+#     ],
+#     linkopts = LINKOPTS,
+#     timeout = TIMEOUT
+# )
+

@@ -10,7 +10,6 @@ common --registry=https://bcr.bazel.build
 common --symlink_prefix=.bazel/
 
 common --override_repository=libs7~0.1.0=/Users/gar/libs7/libs7
-common --override_repository=mustachios~0.1.0=/Users/gar/obazl/mustachios
 
 # build --experimental_cc_shared_library
 # run   --experimental_cc_shared_library
@@ -23,7 +22,7 @@ test:show --test_output=all
 test:show --keep_going
 
 common:showdev --config=show
-# common:showdev --//config/profile=dev
+common:showdev --@libs7//config/profile=dev
 common:showdev --compilation_mode=fastbuild
 test:showdev --test_output=all
 test:showdev --keep_going

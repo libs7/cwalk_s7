@@ -1,0 +1,5 @@
+bazel_dep(name = "cwalk_s7")
+local_path_override(
+    module_name = "cwalk_s7",
+    path = "..",
+)
