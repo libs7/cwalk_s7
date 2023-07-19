@@ -33,7 +33,6 @@ cc_test(
     local_defines = DEFINES,
     deps = DEPS + [
         "//src:cwalk_s7"
-        # "//lib/libcwalk:cwalk_s7_archive"
     ],
     copts = COPTS,
     linkopts = LINKOPTS,

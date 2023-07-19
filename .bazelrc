@@ -2,14 +2,11 @@ common --experimental_cc_shared_library
 
 common --enable_bzlmod
 
-common --registry=file:///%workspace%/../../obazl/registry
-#common --registry=https://raw.githubusercontent.com/obazl/registry/main/
+common --registry=https://raw.githubusercontent.com/obazl/registry/main/
 
 common --registry=https://bcr.bazel.build
 
 common --symlink_prefix=.bazel/
-
-common --override_repository=libs7~0.1.0=/Users/gar/libs7/libs7
 
 # build --experimental_cc_shared_library
 # run   --experimental_cc_shared_library
