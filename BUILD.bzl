@@ -8,8 +8,15 @@ UNITY_VERSION = "2.5.2"
 UTHASH_VERSION = "2.3.0"
 
 BASE_SRCS = []
-BASE_DEPS = []
-BASE_INCLUDE_PATHS = []
+BASE_DEPS = [
+    "@libs7//src:s7",
+    "@liblog_cc//src:logc"
+]
+BASE_INCLUDE_PATHS = [
+    "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+    "-Iexternal/liblog_cc~{}/src".format(LIBLOG_CC_VERSION)
+]
 BASE_COPTS = []
 BASE_DEFINES = []
 BASE_LINKOPTS = []
+TIMEOUT = "short"

@@ -1,56 +1,82 @@
 load("@rules_cc//cc:defs.bzl", "cc_test")
 
-load("@libs7//:BUILD.bzl",
+load("//:BUILD.bzl",
      "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
-     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS",
+     "TIMEOUT",
+     "GOPT_VERSION",
+     "UNITY_VERSION",
+     "UTHASH_VERSION")
 
-load("//test:BUILD.bzl",
-     "TEST_SRCS", "TEST_DEPS", "TEST_INCLUDE_PATHS",
-     "TEST_COPTS", "TEST_DEFINES", "TEST_LINKOPTS",
-     "TIMEOUT")
+# load("//test:BUILD.bzl",
+#      "TEST_SRCS", "TEST_DEPS", "TEST_INCLUDE_PATHS",
+#      "TEST_COPTS", "TEST_DEFINES", "TEST_LINKOPTS",
+#      "TIMEOUT")
 
-SRCS          = BASE_SRCS + TEST_SRCS
-INCLUDE_PATHS = BASE_INCLUDE_PATHS + TEST_INCLUDE_PATHS
-COPTS         = BASE_COPTS + TEST_COPTS + INCLUDE_PATHS
-DEPS          = BASE_DEPS + TEST_DEPS
-DEFINES       = BASE_DEFINES + TEST_DEFINES
-LINKOPTS      = BASE_LINKOPTS + TEST_LINKOPTS
+DEPS          = BASE_DEPS + [
+    "@gopt//:gopt",
+    "@unity//src:unity",
+    "@uthash//src:uthash"
+]
+SRCS          = BASE_SRCS
+INCLUDE_PATHS = BASE_INCLUDE_PATHS + [
+    "-Isrc",
+    "-Itest",
+    "-Iexternal/gopt~{}/src".format(GOPT_VERSION),
+    "-Iexternal/unity~{}/src".format(UNITY_VERSION),
+    "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
+]
+COPTS         = BASE_COPTS + INCLUDE_PATHS
+DEFINES       = BASE_DEFINES
+LINKOPTS      = BASE_LINKOPTS
 
 ################################################################
-exports_files(["common.c", "common.h"])
+# exports_files(["common.c", "common.h"])
 
 test_suite(
     name  = "test",
     tests = [
-        ":cwalk_s7_archive",
+        ":cwalk_s7_static_test",
+        ":cwalk_s7_dso_static_test",
+        ":cwalk_s7_dso_dyn_test",
     ]
 )
 
 cc_test(
-    name = "cwalk_s7_test",
+    name = "cwalk_s7_static_test",
     linkstatic = True,
     srcs = SRCS + ["cwalk_test.c", "common.c", "common.h"],
     local_defines = DEFINES,
-    deps = DEPS + [
-        "//src:cwalk_s7"
-    ],
+    deps = DEPS + ["//src:cwalk_s7"],
     copts = COPTS,
     linkopts = LINKOPTS,
     timeout  = TIMEOUT,
 )
 
 cc_test(
-    name = "cwalk_s7_shared_test",
+    name = "cwalk_s7_dso_static_test",
     linkstatic = True,
     srcs = SRCS + [
         "cwalk_test.c", "common.c", "common.h",
         "//src:cwalk_s7_dso",
     ],
     local_defines = DEFINES,
-    data = ["//src:cwalk_s7_dso"],
-    deps = DEPS + [
-        # "//lib/libcwalk:cwalk_s7"
+    # data = ["//src:cwalk_s7_dso"],
+    deps = DEPS,
+    copts = COPTS,
+    linkopts = LINKOPTS,
+    timeout  = TIMEOUT,
+)
+
+cc_test(
+    name = "cwalk_s7_dso_dyn_test",
+    linkstatic = True,
+    srcs = SRCS + [
+        "cwalk_test.c", "common.c", "common.h",
     ],
+    local_defines = DEFINES,
+    data = ["//src:cwalk_s7_dso"],
+    deps = DEPS,
     copts = COPTS,
     linkopts = LINKOPTS,
     timeout  = TIMEOUT,
