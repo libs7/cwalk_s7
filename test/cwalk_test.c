@@ -4,13 +4,20 @@
 #include "utarray.h"
 #include "utstring.h"
 
-#include "common.h"
-
-#include "libs7.h"
+#include "clibtest_config.h"
 
 s7_scheme *s7;
 
 extern struct option options[];
+
+bool verbose;
+int  verbosity;
+bool debug;
+
+extern bool libs7_verbose;
+extern bool libs7_debug;
+extern bool libs7_debug_runfiles;
+extern bool libs7_trace;
 
 char *sexp_input;
 char *sexp_expected;
@@ -19,12 +26,6 @@ UT_string *setter;
 UT_string *sexp;
 s7_pointer actual;
 s7_pointer expected;
-
-bool verbose;
-bool debug;
-#if defined(DEVBUILD)
-extern bool libs7_debug;
-#endif
 
 /* WARNING: setUp and tearDown are run once per test. */
 void setUp(void) {
@@ -97,25 +98,8 @@ void test_cwalk(void) {
 
 int main(int argc, char **argv)
 {
-    if ( !getenv("BAZEL_TEST") ) {
-        log_error("This test must be run in a Bazel environment: bazel test //path/to/test (or bazel run)" );
-        exit(EXIT_FAILURE);
-    }
 
-    /* log_trace("WS: %s", getenv("TEST_WORKSPACE")); */
-    /* log_debug("ARGV[0]: %s", argv[0]); */
-    /* log_debug("CWD: %s", getcwd(NULL, 0)); */
-
-    argc = gopt (argv, options);
-    (void)argc;
-    gopt_errors (argv[0], options);
-
-    set_options("cwalk", options);
-
-    if (debug)
-        print_debug_env();
-
-    s7 = libs7_init();
+    s7 = initialize("cwalk", argc, argv);
 
 #if defined(DEVBUILD)
     libs7_debug = true;
@@ -129,10 +113,12 @@ int main(int argc, char **argv)
     (void)newpath;
 
     /* debugging: */
-    /* s7_pointer loadpath = s7_load_path(s7); */
-    /* char *s = s7_object_to_c_string(s7, loadpath); */
-    /* log_debug("load path: %s", s); */
-    /* free(s); */
+    if (verbosity > 2) {
+        s7_pointer loadpath = s7_load_path(s7);
+        char *s = s7_object_to_c_string(s7, loadpath);
+        log_debug("load path: %s", s);
+        free(s);
+    }
 
     utstring_new(sexp);
 

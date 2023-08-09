@@ -1,0 +1,15 @@
+name = "cwalk_s7",
+version = "1.2.7",
+compatibility_level = 1
+
+[deps]
+cwalk = "1.2.7"
+libs7 = "0.1.0"
+platforms = "0.0.6"
+
+[dev]
+# bzlmod_tools = "0.1.0"
+liblogc = "1.0.0"
+s7_tools = "0.1.0"
+unity = "2.5.2"
+uthash = "2.3.0"
