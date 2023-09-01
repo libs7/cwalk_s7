@@ -1,0 +1,11 @@
+load("@libs7//plugin:RULES.bzl", "clibgen")
+
+clibgen(
+    name = "clibgen",
+    args = [
+        # "-v",
+        "--script", "$(location libcwalk_clibgen.scm)"
+    ],
+    srcs = [":libcwalk_clibgen.scm"],
+    outs = [":libcwalk_s7.c"]
+)

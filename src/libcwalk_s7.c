@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <cwalk.h>
-#include "s7.h"
+#include "libs7.h"
 
 static s7_pointer c_pointer_string, string_string, character_string, boolean_string, real_string, complex_string, integer_string;
 

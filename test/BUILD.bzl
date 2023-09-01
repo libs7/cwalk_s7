@@ -12,7 +12,7 @@ TEST_DEPS = [
     "@test_s7//src:test_s7",
     "@unity//src:unity",
     # "@libs7//src:s7",
-    # "@gopt//:gopt",
+    # "@gopt//src:gopt",
     # "@uthash//src:uthash"
 ]
 

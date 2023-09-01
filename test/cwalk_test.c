@@ -4,7 +4,7 @@
 #include "utarray.h"
 #include "utstring.h"
 
-#include "clibtest_config.h"
+#include "s7plugin_test_config.h"
 
 s7_scheme *s7;
 
@@ -98,7 +98,6 @@ void test_cwalk(void) {
 
 int main(int argc, char **argv)
 {
-
     s7 = initialize("cwalk", argc, argv);
 
 #if defined(DEVBUILD)

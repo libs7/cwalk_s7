@@ -1,36 +1,57 @@
-load("@rules_cc//cc:defs.bzl", "cc_test")
+load("//config/cc:BUILD.bzl",
+     "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
+     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
 
-load("//:MODULE.bzl",
-     # "GOPT_VERSION",
-     "LIBS7_VERSION",
-     "LIBLOGC_VERSION",
-     "S7_TOOLS_VERSION",
-     "UNITY_VERSION",
-     "UTHASH_VERSION")
+SRCS = BASE_SRCS + [
+    "//src:trace_dev.h",
+    "test_macros.h"
+]
 
-DEPS          = [
-    "@s7_tools//src:clibtest_config",
+DEPS = BASE_DEPS + [
+    "@s7_tools//src:s7plugin_test_config",
+    "@gopt//src:gopt",
     "@unity//src:unity",
+    "@uthash//src:uthash",
 ]
-
-SRCS          = []
-INCLUDE_PATHS = [
+INCLUDE_PATHS = BASE_INCLUDE_PATHS + [
     "-Isrc",
-    "-Itest",
-
-    "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
-    "-I$(GENDIR)/external/libs7~{}/src".format(LIBS7_VERSION),
-    "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
-    "-Iexternal/unity~{}/src".format(UNITY_VERSION),
-    "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
-
-    "-I$(GENDIR)/external/s7_tools~{}/src".format(S7_TOOLS_VERSION),
+    "-I$(@gopt)/src",
+    "-I$(@unity)/src",
+    "-I$(@uthash)/src",
+    "-I$(GENDIR)/$(@s7_tools)/src",
 ]
-COPTS         = INCLUDE_PATHS
-DEFINES       = [] #TEST_DEFINES
-LINKOPTS      = [] #TEST_LINKOPTS
+COPTS = BASE_COPTS + INCLUDE_PATHS + [
+    "-Wno-gnu-statement-expression"
+]
+DEFINES    = BASE_DEFINES
+LINKOPTS   = BASE_LINKOPTS
+TOOLCHAINS = ["//:test_repo_paths"]
+TIMEOUT    = "short"
+TAGS       = ["cwalk"]
 
-TIMEOUT = "short"
+# DEPS          = [
+#     "@s7_tools//src:clibtest_config",
+#     "@unity//src:unity",
+# ]
+
+# SRCS          = []
+# INCLUDE_PATHS = [
+#     "-Isrc",
+#     "-Itest",
+
+#     "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
+#     "-I$(GENDIR)/external/libs7~{}/src".format(LIBS7_VERSION),
+#     "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
+#     "-Iexternal/unity~{}/src".format(UNITY_VERSION),
+#     "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
+
+#     "-I$(GENDIR)/external/s7_tools~{}/src".format(S7_TOOLS_VERSION),
+# ]
+# COPTS         = INCLUDE_PATHS
+# DEFINES       = [] #TEST_DEFINES
+# LINKOPTS      = [] #TEST_LINKOPTS
+
+# TIMEOUT = "short"
 
 ################################################################
 test_suite(
@@ -50,6 +71,7 @@ cc_test(
     copts = COPTS,
     local_defines = DEFINES,
     linkopts = LINKOPTS,
+    toolchains = TOOLCHAINS,
     timeout  = TIMEOUT,
 )
 
@@ -61,10 +83,10 @@ cc_test(
         "//src:cwalk_s7_dso",
     ],
     local_defines = DEFINES,
-    # data = ["//src:cwalk_s7_dso"],
     deps = DEPS,
     copts = COPTS,
     linkopts = LINKOPTS,
+    toolchains = TOOLCHAINS,
     timeout  = TIMEOUT,
 )
 
@@ -79,6 +101,7 @@ cc_test(
     deps = DEPS,
     copts = COPTS,
     linkopts = LINKOPTS,
+    toolchains = TOOLCHAINS,
     timeout  = TIMEOUT,
 )
 
