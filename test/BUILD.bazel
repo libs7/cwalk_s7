@@ -1,57 +1,36 @@
-load("//config/cc:BUILD.bzl",
-     "BASE_SRCS", "BASE_DEPS", "BASE_INCLUDE_PATHS",
-     "BASE_COPTS", "BASE_DEFINES", "BASE_LINKOPTS")
+load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
+
+load("//config/cc:CONFIG.bzl",
+     "BASE_SRCS",
+     "BASE_DEPS",
+     "BASE_COPTS",
+     "BASE_LINKOPTS",
+     "PROFILE")
 
 SRCS = BASE_SRCS + [
-    "//src:trace_dev.h",
     "test_macros.h"
 ]
 
 DEPS = BASE_DEPS + [
-    "@s7_tools//src:s7plugin_test_config",
-    "@gopt//src:gopt",
-    "@unity//src:unity",
-    "@uthash//src:uthash",
+    "@libs7//plugin:s7plugin_test_config",
+    "@gopt//lib:gopt",
+    "@unity//lib:unity",
+    "@uthash//lib:uthash",
 ]
-INCLUDE_PATHS = BASE_INCLUDE_PATHS + [
-    "-Isrc",
-    "-I$(@gopt)/src",
-    "-I$(@unity)/src",
-    "-I$(@uthash)/src",
-    "-I$(GENDIR)/$(@s7_tools)/src",
+# INCLUDE_PATHS = BASE_INCLUDE_PATHS + [
+#     # "-Isrc",
+#     # "-I$(@gopt)/src",
+#     # "-I$(@unity)/src",
+#     # "-I$(@uthash)/src",
+#     # "-I$(GENDIR)/$(@s7_tools)/src",
+# ]
+COPTS = BASE_COPTS + [
+    "-Wno-gnu-statement-expression",
+    "-I$(GENDIR)/test"
 ]
-COPTS = BASE_COPTS + INCLUDE_PATHS + [
-    "-Wno-gnu-statement-expression"
-]
-DEFINES    = BASE_DEFINES
 LINKOPTS   = BASE_LINKOPTS
-TOOLCHAINS = ["//:test_repo_paths"]
 TIMEOUT    = "short"
 TAGS       = ["cwalk"]
-
-# DEPS          = [
-#     "@s7_tools//src:clibtest_config",
-#     "@unity//src:unity",
-# ]
-
-# SRCS          = []
-# INCLUDE_PATHS = [
-#     "-Isrc",
-#     "-Itest",
-
-#     "-Iexternal/libs7~{}/src".format(LIBS7_VERSION),
-#     "-I$(GENDIR)/external/libs7~{}/src".format(LIBS7_VERSION),
-#     "-Iexternal/liblogc~{}/src".format(LIBLOGC_VERSION),
-#     "-Iexternal/unity~{}/src".format(UNITY_VERSION),
-#     "-Iexternal/uthash~{}/src".format(UTHASH_VERSION),
-
-#     "-I$(GENDIR)/external/s7_tools~{}/src".format(S7_TOOLS_VERSION),
-# ]
-# COPTS         = INCLUDE_PATHS
-# DEFINES       = [] #TEST_DEFINES
-# LINKOPTS      = [] #TEST_LINKOPTS
-
-# TIMEOUT = "short"
 
 ################################################################
 test_suite(
@@ -66,12 +45,11 @@ test_suite(
 cc_test(
     name = "cwalk_s7_static_test",
     linkstatic = True,
-    srcs = SRCS + ["cwalk_test.c"],
-    deps = DEPS + ["//src:cwalk_s7"],
+    srcs = SRCS + ["cwalk_test.c", "mkhdrs"],
+    deps = DEPS + ["//lib:cwalk_s7"],
     copts = COPTS,
-    local_defines = DEFINES,
+    defines = PROFILE,
     linkopts = LINKOPTS,
-    toolchains = TOOLCHAINS,
     timeout  = TIMEOUT,
 )
 
@@ -80,13 +58,13 @@ cc_test(
     linkstatic = True,
     srcs = SRCS + [
         "cwalk_test.c",
-        "//src:cwalk_s7_dso",
+        "//lib:cwalk_s7_dso",
+        ":mkhdrs"
     ],
-    local_defines = DEFINES,
+    defines = PROFILE,
     deps = DEPS,
     copts = COPTS,
     linkopts = LINKOPTS,
-    toolchains = TOOLCHAINS,
     timeout  = TIMEOUT,
 )
 
@@ -95,13 +73,13 @@ cc_test(
     linkstatic = True,
     srcs = SRCS + [
         "cwalk_test.c",
+        ":mkhdrs"
     ],
-    local_defines = DEFINES,
-    data = ["//src:cwalk_s7_dso"],
+    defines = PROFILE,
+    data = ["//lib:cwalk_s7_dso"],
     deps = DEPS,
     copts = COPTS,
     linkopts = LINKOPTS,
-    toolchains = TOOLCHAINS,
     timeout  = TIMEOUT,
 )
 
@@ -115,11 +93,11 @@ cc_test(
 #         ],
 #         "//conditions:default": []
 #     }),
-#     local_defines = DEFINES,
+#     defines = PROFILE,
 #     deps = DEPS + select({
 #         # "//config/clibs/linktime:build?": [
 #         "//config/clibs/link:archive?": [
-#             "@cwalk_s7//src:cwalk_s7"
+#             "@cwalk_s7//lib:cwalk_s7"
 #             # "//lib/libcwalk:cwalk_s7"
 #         ],
 #         # "//config/clibs/linktime:load?": [
@@ -129,7 +107,7 @@ cc_test(
 #     data = select({
 #         # "//config/clibs/linktime:run?": [
 #         "//config/clibs/link:runtime?": [
-#             "@cwalk_s7//src:cwalk_s7_dso"
+#             "@cwalk_s7//lib:cwalk_s7_dso"
 #             # "//lib/libcwalk:cwalk_s7_dso"
 #         ],
 #         "//conditions:default": []
@@ -142,3 +120,23 @@ cc_test(
 #     timeout = TIMEOUT
 # )
 
+makeheaders(
+    name             = "mkhdrs",
+    hdrs_srcs        = ["cwalk_test.c"],
+    additional_srcs  = ["@makeheaders//logging:ansi_colors.h"]
+    + select({
+        "@makeheaders//compilation_mode:fastbuild": [
+            "@makeheaders//logging:macros_debug.h"
+        ],
+        "//conditions:default": [
+            "@makeheaders//logging:macros_ndebug.h"
+        ]
+    }) + select({
+        "@makeheaders//compilation_mode:fastbuild": [
+            "@libs7//logging:s7_macros_debug.h"
+        ],
+        "//conditions:default": [
+            "@libs7//logging:s7_macros_ndebug.h"
+        ]
+    }),
+)

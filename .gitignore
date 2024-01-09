@@ -7,9 +7,9 @@ private
 log.*
 *.log
 obsolete
+tarballs
 tmp
 trace
-obsolete
 
 # Prerequisites
 *.d

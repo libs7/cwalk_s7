@@ -4,6 +4,15 @@
 #include <cwalk.h>
 #include "libs7.h"
 
+const char *cwalk_s7_version = CWALK_S7_VERSION;
+
+#if defined(PROFILE_fastbuild)
+#define DEBUG_LEVEL cwalk_s7_debug
+int     DEBUG_LEVEL = 0;
+#define TRACE_FLAG cwalk_s7_trace
+bool    TRACE_FLAG = false;
+#endif
+
 static s7_pointer c_pointer_string, string_string, character_string, boolean_string, real_string, complex_string, integer_string;
 
 

@@ -1,23 +1,27 @@
 #include "gopt.h"
-#include "log.h"
+#include "liblogc.h"
 #include "unity.h"
 #include "utarray.h"
 #include "utstring.h"
 
 #include "s7plugin_test_config.h"
+#include "cwalk_test.h"
 
 s7_scheme *s7;
 
 extern struct option options[];
 
-bool verbose;
-int  verbosity;
-bool debug;
+int  s7plugin_verbosity;
+extern int  libs7_verbosity;
 
-extern bool libs7_verbose;
-extern bool libs7_debug;
+#if defined(PROFILE_fastbuild)
+#define     TRACE_FLAG cwalk_s7_trace
+extern bool TRACE_FLAG;
+#define     DEBUG_LEVEL cwalk_s7_debug
+extern int  DEBUG_LEVEL;
+
 extern bool libs7_debug_runfiles;
-extern bool libs7_trace;
+#endif
 
 char *sexp_input;
 char *sexp_expected;
@@ -96,15 +100,86 @@ void test_cwalk(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
+/* static void _print_usage(char *test) { */
+/*     printf("Usage:\t$ bazel test test:%s [-- flags]\n", test); */
+/*     printf("  Flags (repeatable)\n"); */
+/*     printf("\t-d, --debug\t\tEnable debugging flags.\n"); */
+/*     printf("\t-t, --trace\t\tEnable trace flags.\n"); */
+/*     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n"); */
+/*     printf("\t    --plugin-debug\tEnable plugin debugging flags.\n"); */
+/* } */
+
+/* enum OPTS { */
+/*     FLAG_HELP, */
+/* #if defined(PROFILE_fastbuild) */
+/*     FLAG_DEBUG, */
+/*     FLAG_DEBUG_PLUGINS, */
+/*     FLAG_TRACE, */
+/* #endif */
+/*     FLAG_VERBOSE, */
+/*     LAST */
+/* }; */
+
+/* struct option options[] = { */
+/*     /\* 0 *\/ */
+/* #if defined(PROFILE_fastbuild) */
+/*     [FLAG_DEBUG] = {.long_name="debug", .short_name='d', */
+/*                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE}, */
+/*     [FLAG_DEBUG_PLUGINS] = {.long_name="plugin-debug", */
+/*                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE}, */
+/*     [FLAG_TRACE] = {.long_name="trace",.short_name='t', */
+/*                     .flags=GOPT_ARGUMENT_FORBIDDEN}, */
+/* #endif */
+/*     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v', */
+/*                       .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE}, */
+/*     [FLAG_HELP] = {.long_name="help",.short_name='h', */
+/*                    .flags=GOPT_ARGUMENT_FORBIDDEN}, */
+/*     [LAST] = {.flags = GOPT_LAST} */
+/* }; */
+
+/* void set_options(char *test, struct option options[]) */
+/* { */
+/*     /\* log_trace("set_options"); *\/ */
+/*     if (options[FLAG_HELP].count) { */
+/*         _print_usage(test); */
+/*         exit(EXIT_SUCCESS); */
+/*     } */
+/* #if defined(PROFILE_fastbuild) */
+/*     if (options[FLAG_DEBUG].count) { */
+/*         cwalk_s7_debug = options[FLAG_DEBUG].count; */
+/*     } */
+/*     if (options[FLAG_DEBUG_PLUGINS].count) { */
+/*         s7plugin_debug = options[FLAG_DEBUG_PLUGINS].count; */
+/*     } */
+/*     if (options[FLAG_TRACE].count) { */
+/*         cwalk_s7_trace = true; */
+/*     } */
+/* #endif */
+/*     if (options[FLAG_VERBOSE].count) { */
+/*         verbosity = options[FLAG_VERBOSE].count; */
+/*         LOG_INFO(0, "verbosity: %d", verbosity); */
+/*         if (verbosity > 1) { */
+/*             libs7_verbosity = verbosity; */
+/*         } */
+/*     } */
+/* } */
+
 int main(int argc, char **argv)
 {
-    s7 = initialize("cwalk", argc, argv);
+    /* argc = gopt (argv, options); */
+    /* (void)argc; */
+    /* gopt_errors (argv[0], options); */
 
-#if defined(DEVBUILD)
-    libs7_debug = true;
-#endif
+    /* set_options("cwalk_s7", options); */
 
-    libs7_load_clib(s7, "cwalk"); //, libcwalk_s7_init);
+    s7 = s7_plugin_initialize("cwalk_s7", argc, argv);
+
+/* #if defined(PROFILE_fastbuild) */
+/*     libs7_debug = true; */
+/*     libs7_debug_runfiles = true; */
+/* #endif */
+
+    libs7_load_plugin(s7, "cwalk"); //, libcwalk_s7_init);
 
     char *script_dir = "./test";
     s7_pointer newpath;
@@ -112,7 +187,7 @@ int main(int argc, char **argv)
     (void)newpath;
 
     /* debugging: */
-    if (verbosity > 2) {
+    if (s7plugin_verbosity > 2) {
         s7_pointer loadpath = s7_load_path(s7);
         char *s = s7_object_to_c_string(s7, loadpath);
         log_debug("load path: %s", s);

@@ -1,7 +1,7 @@
-load("//:BUILD.bzl",
-     "GOPT_VERSION",
-     "UNITY_VERSION",
-     "UTHASH_VERSION")
+# load("//:BUILD.bzl",
+#      "GOPT_VERSION",
+#      "UNITY_VERSION",
+#      "UTHASH_VERSION")
 
 ## Args common to all test binarys:
 TIMEOUT = "short"
@@ -20,7 +20,7 @@ TEST_COPTS = []
 
 TEST_INCLUDE_PATHS = [
     "-Isrc",
-    "-Iexternal/unity~{}/src".format(UNITY_VERSION),
+    # "-Iexternal/unity~{}/src".format(UNITY_VERSION),
     # "-Iexternal/gopt~{}/src".format(GOPT_VERSION),
     # "-Iexternal/uthash~{}/src".format(UTHASH_VERSION)
 ]

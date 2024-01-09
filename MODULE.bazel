@@ -1,21 +1,24 @@
 module(
     name = "cwalk_s7",
     version = "1.2.7",
-    compatibility_level = 1
+    compatibility_level = 1,
+    bazel_compatibility = [">=6.4.0"]
 )
 
-bazel_dep(name = "platforms", version = "0.0.7")
-bazel_dep(name = "cc_config",    version = "1.0.0")
-bazel_dep(name = "libs7", version = "1.0.0")
-bazel_dep(name = "cwalk", version = "1.2.7")
-bazel_dep(name = "liblogc",  version = "1.0.0")
-bazel_dep(name = "uthash", version = "2.3.0")
+# bcr:
+bazel_dep(name = "platforms",      version = "0.0.8")
+
+# obazl:
+bazel_dep(name = "obazl_tools_cc", version = "2.0.0")
+bazel_dep(name = "libs7",          version = "2.0.0")
+bazel_dep(name = "cwalk",          version = "1.2.7.bzl.1")
+bazel_dep(name = "liblogc",        version = "2.0.0")
+bazel_dep(name = "makeheaders",    version = "2.0.0")
+bazel_dep(name = "uthash",         version = "3.0.0")
 
 ## dev dependencies
-bazel_dep(name = "gopt", version = "10.0.0",
+bazel_dep(name = "gopt",           version = "10.0.0.bzl.1",
           dev_dependency=True)
-# bazel_dep(name = "s7_tools", version = "1.0.0",
-#           dev_dependency=True)
-bazel_dep(name = "unity",  version = "2.5.2",
+bazel_dep(name = "unity",          version = "2.5.2.bzl.1",
           dev_dependency=True)
 
