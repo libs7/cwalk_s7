@@ -2,3 +2,53 @@
 s7 bindings for C lilbrary cwalk
 
 WARNING: Not ready for general use.
+
+
+== Scheme API
+
+1. Replace prefix `cwk_path` with `cwk
+2. Drop `_get_`
+3. Convert `_is_foo` to `foo?`
+4. Convert `_` to `-`.
+5. Use setters instead of `+_change_+` functions
+
+E.g.
+
+* `cwk_path_get_basename` =>  `cwk:basename`
+* `cwk_path_is_absolute` => `cwk:absolute?`
+* `cwk_path_get_absolute` => `cwk:absolute`
+* `cwk_path_change_basename` => `(set! (cwk:basename) foo)`
+
+
+=== Segmentation
+
+A cwalk `cwk_segment` behaves like a Scheme sequence. For example:
+
+`+(cwk:path->segments "foo/bar/baz")+` behaves like `("foo" "bar" "baz")`
+
+`+(cwk:path->segments "foo/bar/baz" :init :cwd)+` behaves like `("." "foo" "bar" "baz")` (i.e. treats "foo/bar/baz" like "./foo/bar/baz")
+
+This is appliable, so instead of
+`cwk_path_get_first_segment` you can do something like:
+
+* `+((cwk:path->segments "foo/bar") 0)+` => "foo"
+* `+((cwk:path->segments "foo/bar" :init :cwd) 0)+` => "."
+
+You can also use `map`, `for-each`, `length`, etc.
+
+    (map (lambda (seg)
+                ;; do sth
+                )
+        (cwk:path->segments "a/b/c/d/e.txt"))
+
+To convert back to a path: `+(cwk:segments->path segs)+`
+
+=== Initial subpaths
+
+Sometimes we want to iterate over initial subpaths. For example:
+
+`(cwk:initial-subpaths "foo/bar/baz")` behaves like `("foo" "foo/bar" "foo/bar/baz")`
+
+This is appliable too:
+
+* `((cwk:initial-subpaths "foo/bar/baz") 1)` => "foo/bar"

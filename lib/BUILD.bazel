@@ -1,3 +1,4 @@
+load("@rules_cc//cc:defs.bzl", "cc_shared_library")
 load("@libs7//plugin:MACROS.bzl", "s7_plugin", "s7_library")
 load("//config/cc:CONFIG.bzl",
      "BASE_SRCS",

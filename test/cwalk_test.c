@@ -20,6 +20,11 @@ extern bool TRACE_FLAG;
 #define     DEBUG_LEVEL cwalk_s7_debug
 extern int  DEBUG_LEVEL;
 
+#define S7_DEBUG_LEVEL libs7_debug
+extern int  libs7_debug;
+extern bool s7plugin_trace;
+extern int  s7plugin_debug;
+
 extern bool libs7_debug_runfiles;
 #endif
 
@@ -46,10 +51,7 @@ void tearDown(void) {
 /* free(s); */
 
 void test_cwalk(void) {
-
-    /* cwk_path_get_basename("/my/path.txt", &basename, &length); */
-    /* sexp_input = "((*libcwalk* 'cwk_path_get_basename) \"/my/path.txt\")"; */
-    sexp_input = "(cwk:path-get-basename \"/my/path.txt\")";
+    sexp_input = "(cwk:basename \"/my/path.txt\")";
     actual = s7_eval_c_string(s7, sexp_input);
     sexp_expected = "\"path.txt\"";
     expected = s7_eval_c_string(s7, sexp_expected);
@@ -57,7 +59,7 @@ void test_cwalk(void) {
 
     /* cwk_path_normalize("/var/log/weird/////path/.././..///", result, sizeof(result)); */
     /* sexp_input = "((*libcwalk* 'cwk:path_normalize) \"/var/log/weird/////path/.././..///\")"; */
-    sexp_input = "(cwk:path-normalize \"/var/log/weird/////path/.././..///\")";
+    sexp_input = "(cwk:normalize \"/var/log/weird/////path/.././..///\")";
     sexp_expected = "\"/var/log\"";
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", sexp_input);
@@ -65,7 +67,7 @@ void test_cwalk(void) {
     expected = s7_eval_c_string(s7, sexp_expected);
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
-    sexp_input = "(cwk:path-normalize \"~/foo/bar/../\")";
+    sexp_input = "(cwk:normalize \"~/foo/bar/../\")";
     sexp_expected = "\"~/foo\"";
     utstring_renew(sexp);
     utstring_printf(sexp, "%s", sexp_input);
@@ -100,72 +102,73 @@ void test_cwalk(void) {
     TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 }
 
-/* static void _print_usage(char *test) { */
-/*     printf("Usage:\t$ bazel test test:%s [-- flags]\n", test); */
-/*     printf("  Flags (repeatable)\n"); */
-/*     printf("\t-d, --debug\t\tEnable debugging flags.\n"); */
-/*     printf("\t-t, --trace\t\tEnable trace flags.\n"); */
-/*     printf("\t-v, --verbose\t\tEnable verbosity. Repeatable.\n"); */
-/*     printf("\t    --plugin-debug\tEnable plugin debugging flags.\n"); */
-/* } */
+void test_dirname(void) {
+    log_debug("foo");
+    sexp_input = "(cwk:dirname \"/my/path.txt\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\"/my/\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
 
-/* enum OPTS { */
-/*     FLAG_HELP, */
-/* #if defined(PROFILE_fastbuild) */
-/*     FLAG_DEBUG, */
-/*     FLAG_DEBUG_PLUGINS, */
-/*     FLAG_TRACE, */
-/* #endif */
-/*     FLAG_VERBOSE, */
-/*     LAST */
-/* }; */
+    sexp_input = "(cwk:dirname \"//foo/bar/baz\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\"//foo/bar/\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
 
-/* struct option options[] = { */
-/*     /\* 0 *\/ */
-/* #if defined(PROFILE_fastbuild) */
-/*     [FLAG_DEBUG] = {.long_name="debug", .short_name='d', */
-/*                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE}, */
-/*     [FLAG_DEBUG_PLUGINS] = {.long_name="plugin-debug", */
-/*                     .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE}, */
-/*     [FLAG_TRACE] = {.long_name="trace",.short_name='t', */
-/*                     .flags=GOPT_ARGUMENT_FORBIDDEN}, */
-/* #endif */
-/*     [FLAG_VERBOSE] = {.long_name="verbose",.short_name='v', */
-/*                       .flags=GOPT_ARGUMENT_FORBIDDEN | GOPT_REPEATABLE}, */
-/*     [FLAG_HELP] = {.long_name="help",.short_name='h', */
-/*                    .flags=GOPT_ARGUMENT_FORBIDDEN}, */
-/*     [LAST] = {.flags = GOPT_LAST} */
-/* }; */
+void test_get_first_segment(void) {
+    sexp_input = "(cwk:first-segment \"/my/path.txt\")";
+    s7_pointer actual = s7_eval_c_string(s7, sexp_input);
+    /* seg is cwk:segment, with fields size and begin */
+    /* actual = s7_call(s7, s7_name_to_value(s7, "cwk:seg"), */
+    /* TRACE_S7_DUMP(0, "actual: '%s'", actual); */
 
-/* void set_options(char *test, struct option options[]) */
-/* { */
-/*     /\* log_trace("set_options"); *\/ */
-/*     if (options[FLAG_HELP].count) { */
-/*         _print_usage(test); */
-/*         exit(EXIT_SUCCESS); */
-/*     } */
-/* #if defined(PROFILE_fastbuild) */
-/*     if (options[FLAG_DEBUG].count) { */
-/*         cwalk_s7_debug = options[FLAG_DEBUG].count; */
-/*     } */
-/*     if (options[FLAG_DEBUG_PLUGINS].count) { */
-/*         s7plugin_debug = options[FLAG_DEBUG_PLUGINS].count; */
-/*     } */
-/*     if (options[FLAG_TRACE].count) { */
-/*         cwalk_s7_trace = true; */
-/*     } */
-/* #endif */
-/*     if (options[FLAG_VERBOSE].count) { */
-/*         verbosity = options[FLAG_VERBOSE].count; */
-/*         LOG_INFO(0, "verbosity: %d", verbosity); */
-/*         if (verbosity > 1) { */
-/*             libs7_verbosity = verbosity; */
-/*         } */
-/*     } */
-/* } */
+    sexp_expected = "\"my\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_input = "(cwk:first-segment \"my/path.txt\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\"my\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_input = "(cwk:first-segment \"my\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\"my\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_input = "(cwk:first-segment \"/my\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\"my\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_input = "(cwk:first-segment \"./\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\".\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_input = "(cwk:first-segment \"./foo/bar\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    sexp_expected = "\".\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+
+    sexp_input = "(cwk:first-segment \"/\")";
+    actual = s7_eval_c_string(s7, sexp_input);
+    /* TRACE_S7_DUMP(0, "actual: '%s'", actual); */
+    sexp_expected = "\"\"";
+    expected = s7_eval_c_string(s7, sexp_expected);
+    TEST_ASSERT_TRUE(s7_is_equal(s7, actual, expected));
+}
 
 int main(int argc, char **argv)
 {
+    libs7_debug = 1;
     /* argc = gopt (argv, options); */
     /* (void)argc; */
     /* gopt_errors (argv[0], options); */
@@ -199,6 +202,8 @@ int main(int argc, char **argv)
     UNITY_BEGIN();
 
     RUN_TEST(test_cwalk);
+    RUN_TEST(test_dirname);
+    RUN_TEST(test_get_first_segment);
 
     utstring_free(sexp);
     return UNITY_END();

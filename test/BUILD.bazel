@@ -1,3 +1,6 @@
+load("@rules_cc//cc:defs.bzl", "cc_test")
+
+load("@liblogc//macros:logging.bzl", "LOGGING_MACROS")
 load("@makeheaders//rules:makeheaders.bzl", "makeheaders")
 
 load("//config/cc:CONFIG.bzl",
@@ -45,7 +48,7 @@ test_suite(
 cc_test(
     name = "cwalk_s7_static_test",
     linkstatic = True,
-    srcs = SRCS + ["cwalk_test.c", "mkhdrs"],
+    srcs = ["cwalk_test.c", "mkhdrs"],
     deps = DEPS + ["//lib:cwalk_s7"],
     copts = COPTS,
     defines = PROFILE,
@@ -123,20 +126,12 @@ cc_test(
 makeheaders(
     name             = "mkhdrs",
     hdrs_srcs        = ["cwalk_test.c"],
-    additional_srcs  = ["@makeheaders//logging:ansi_colors.h"]
-    + select({
-        "@makeheaders//compilation_mode:fastbuild": [
-            "@makeheaders//logging:macros_debug.h"
+    additional_srcs  = LOGGING_MACROS + select({
+        "@liblogc//compilation_mode:fastbuild?": [
+            "@libs7//macros:s7_logging_debug.h",
         ],
         "//conditions:default": [
-            "@makeheaders//logging:macros_ndebug.h"
+            "@libs7//macros:s7_logging_ndebug.h",
         ]
-    }) + select({
-        "@makeheaders//compilation_mode:fastbuild": [
-            "@libs7//logging:s7_macros_debug.h"
-        ],
-        "//conditions:default": [
-            "@libs7//logging:s7_macros_ndebug.h"
-        ]
-    }),
+    })
 )

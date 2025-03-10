@@ -1,20 +1,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#include <cwalk.h>
-#include "libs7.h"
-
-const char *cwalk_s7_version = CWALK_S7_VERSION;
-
-#if defined(PROFILE_fastbuild)
-#define DEBUG_LEVEL cwalk_s7_debug
-int     DEBUG_LEVEL = 0;
-#define TRACE_FLAG cwalk_s7_trace
-bool    TRACE_FLAG = false;
-#endif
+#include "cwalk.h"
+#include "s7.h"
 
 static s7_pointer c_pointer_string, string_string, character_string, boolean_string, real_string, complex_string, integer_string;
 
+static int cwk_segment_type_tag = 0;
 
 /* -------- cwk_path_get_absolute -------- */
 static s7_pointer cwk_cwk_path_get_absolute(s7_scheme *sc, s7_pointer args)
@@ -80,22 +72,36 @@ static s7_pointer cwk_cwk_path_get_relative(s7_scheme *sc, s7_pointer args)
 }
 
 
-                  static s7_pointer g_cwk_path_get_basename(s7_scheme *sc, s7_pointer args)
-                  {
-                    char* path;
-                    const char *basename;
-                    size_t length;
-                    if (s7_is_string(s7_car(args)))
-                       path = (char*)s7_string(s7_car(args));
-                    else return(s7_wrong_type_error(sc,
-                        s7_make_string_wrapper_with_length(sc, "(*libcwalk* 'cwk_path_get_basename)", 14), 1, s7_car(args), string_string)
-                         );
-                    cwk_path_get_basename(path, &basename, &length);
-                    // fprintf(stderr, "basename: '%.*s'\n", (int)length, basename);
-                    s7_pointer res = s7_make_string_with_length(sc, basename, length);
-                    return(res);
-                  }
-                 
+static s7_pointer g_cwk_path_get_basename(s7_scheme *sc, s7_pointer args)
+{
+    char* path;
+    const char *basename;
+    size_t length;
+    if (s7_is_string(s7_car(args)))
+        path = (char*)s7_string(s7_car(args));
+    else return(s7_wrong_type_error(sc,
+                                    s7_make_string_wrapper_with_length(sc, "(*libcwalk* 'cwk_path_get_basename)", 14), 1, s7_car(args), string_string)
+                );
+    cwk_path_get_basename(path, &basename, &length);
+    // fprintf(stderr, "basename: '%.*s'\n", (int)length, basename);
+    s7_pointer res = s7_make_string_with_length(sc, basename, length);
+    return(res);
+}
+
+static s7_pointer g_cwk_path_get_dirname(s7_scheme *sc, s7_pointer args)
+{
+    char* path;
+    size_t length;
+    if (s7_is_string(s7_car(args)))
+        path = (char*)s7_string(s7_car(args));
+    else return(s7_wrong_type_error(sc,
+                                    s7_make_string_wrapper_with_length(sc, "(*libcwalk* 'cwk_path_get_dirname)", 14), 1, s7_car(args), string_string)
+                );
+    cwk_path_get_dirname(path, &length);
+    ;; fprintf(stderr, "dirname: '%.*s'\n", (int)length, path);
+    s7_pointer res = s7_make_string_with_length(sc, path, length);
+    return(res);
+}
 
 /* -------- cwk_path_has_extension -------- */
 static s7_pointer cwk_cwk_path_has_extension(s7_scheme *sc, s7_pointer args)
@@ -111,24 +117,68 @@ static s7_pointer cwk_cwk_path_has_extension(s7_scheme *sc, s7_pointer args)
 }
 
 
-                  static s7_pointer g_cwk_path_normalize(s7_scheme *sc, s7_pointer args)
-                  {
-                    char* path;
-                    char result[FILENAME_MAX];
-                    size_t res_len;
+static s7_pointer g_cwk_path_normalize(s7_scheme *sc, s7_pointer args)
+{
+    char* path;
+    char result[FILENAME_MAX];
+    size_t res_len;
 
-                    if (s7_is_string(s7_car(args)))
-                       path = (char*)s7_string(s7_car(args));
-                    else return(s7_wrong_type_error(sc,
-                        s7_make_string_wrapper_with_length(sc, "(*libcwalk* 'cwk_path_normalize)", 14), 1, s7_car(args), string_string)
-                         );
+    if (s7_is_string(s7_car(args)))
+        path = (char*)s7_string(s7_car(args));
+    else return(s7_wrong_type_error(sc,
+                                    s7_make_string_wrapper_with_length(sc, "(*libcwalk* 'cwk_path_normalize)", 14), 1, s7_car(args), string_string)
+                );
 
-                    res_len = cwk_path_normalize(path, result, sizeof(result));
-                    // printf("normalized: %s\n", result);
-                    s7_pointer res = s7_make_string_with_length(sc, result, res_len);
-                    return(res);
-                  }
-                 
+    res_len = cwk_path_normalize(path, result, sizeof(result));
+    // printf("normalized: %s\n", result);
+    s7_pointer res = s7_make_string_with_length(sc, result, res_len);
+    return(res);
+}
+
+static s7_pointer mark_cwk_segment(s7_scheme *sc, s7_pointer obj)
+{
+  (void)sc; (void)obj;
+  // struct cwk_segment *o = (struct cwk_segment *)s7_c_object_value(obj);
+  // s7_mark(o->data); // dax *o->data is an s7_pointer
+  return(NULL);
+}
+
+
+static s7_pointer free_cwk_segment(s7_scheme *sc, s7_pointer obj)
+{
+  (void)sc;
+  free(s7_c_object_value(obj));
+  return(NULL);
+}
+
+static s7_pointer g_cwk_path_get_first_segment(s7_scheme *sc, s7_pointer args)
+{
+    char* path;
+    if (s7_is_string(s7_car(args)))
+        path = (char*)s7_string(s7_car(args));
+    else return(s7_wrong_type_error(sc,
+                                    s7_make_string_wrapper_with_length(sc, "(cwk:path-get-first-segment)", 28), 1, s7_car(args), string_string)
+                );
+
+    struct cwk_segment *segment;
+    segment = (struct cwk_segment *)malloc(sizeof(struct cwk_segment));
+    s7_pointer res;
+
+    if(!cwk_path_get_first_segment(path, segment)) {
+        // res = s7_make_string_with_length(sc, segment->begin, segment->size);
+        res = s7_make_string(sc, "");
+    } else {
+        // fprintf(stderr, "segment: '%.*s'\n", segment->size, segment);
+        res = s7_make_string_with_length(sc, segment->begin, segment->size);
+        // res = segment;
+    }
+    return(res);
+
+    s7_pointer r = (s7_make_c_object(sc, cwk_segment_type_tag, (void *)segment));
+    // return(r);
+    (void)r;
+
+}
 s7_pointer libcwalk_s7_init(s7_scheme *sc);
 s7_pointer libcwalk_s7_init(s7_scheme *sc)
 {
@@ -153,18 +203,63 @@ s7_pointer libcwalk_s7_init(s7_scheme *sc)
   integer_string = s7_make_semipermanent_string(sc, "an integer");
   cur_env = s7_inlet(sc, s7_nil(sc));
   s7_pointer old_shadow = s7_set_shadow_rootlet(sc, cur_env);
+  
+  cwk_segment_type_tag = s7_make_c_type(sc, "cwk_segment");
+  s7_c_type_set_gc_free(sc, cwk_segment_type_tag, free_cwk_segment);
+  s7_c_type_set_gc_mark(sc, cwk_segment_type_tag, mark_cwk_segment); // Not needed?
+/*
+  s7_c_type_set_is_equal(sc, cwk_segment_type_tag, cwk_segment_is_equal);
+  s7_c_type_set_to_string(sc, cwk_segment_type_tag, cwk_segment_to_string);
+  s7_c_type_set_ref      (sc, cwk_segment_type_tag, cwk_segment_ref);
+  s7_c_type_set_set      (sc, cwk_segment_type_tag, cwk_segment_set);
+  s7_c_type_set_to_list  (sc, cwk_segment_type_tag, cwk_segment_to_list);
+  s7_c_type_set_to_string(sc, cwk_segment_type_tag, cwk_segment_to_string);
+  s7_c_type_set_length   (sc, cwk_segment_type_tag, cwk_segment_length);
+
+void s7_c_type_set_getter       (s7_scheme *sc, s7_int type, s7_pointer getter);
+void s7_c_type_set_setter       (s7_scheme *sc, s7_int type, s7_pointer setter);
+
+void s7_c_type_set_copy         (s7_scheme *sc, s7_int type, s7_pointer (*copy)      (s7_scheme *sc, s7_pointer args));
+void s7_c_type_set_fill         (s7_scheme *sc, s7_int type, s7_pointer (*fill)      (s7_scheme *sc, s7_pointer args));
+void s7_c_type_set_reverse      (s7_scheme *sc, s7_int type, s7_pointer (*reverse)   (s7_scheme *sc, s7_pointer args));
+*/
+
+
+#ifdef CWK_BACK_SEG
+  s7_define(sc, cur_env, s7_make_symbol(sc, "cwk:CWK_BACK_SEG"), s7_make_integer(sc, (s7_int)CWK_BACK_SEG));
+#endif
+#ifdef CWK_CURRENT_SEG
+  s7_define(sc, cur_env, s7_make_symbol(sc, "cwk:CWK_CURRENT_SEG"), s7_make_integer(sc, (s7_int)CWK_CURRENT_SEG));
+#endif
+#ifdef CWK_NORMAL_SEG
+  s7_define(sc, cur_env, s7_make_symbol(sc, "cwk:CWK_NORMAL_SEG"), s7_make_integer(sc, (s7_int)CWK_NORMAL_SEG));
+#endif
+#ifdef CWK_STYLE_UNIX
+  s7_define(sc, cur_env, s7_make_symbol(sc, "cwk:CWK_STYLE_UNIX"), s7_make_integer(sc, (s7_int)CWK_STYLE_UNIX));
+#endif
+#ifdef CWK_STYLE_WINDOWS
+  s7_define(sc, cur_env, s7_make_symbol(sc, "cwk:CWK_STYLE_WINDOWS"), s7_make_integer(sc, (s7_int)CWK_STYLE_WINDOWS));
+#endif
 
   s7_define(sc, cur_env,
-            s7_make_symbol(sc, "cwk:path-normalize"),
-            s7_make_typed_function(sc, "cwk:path-normalize", g_cwk_path_normalize, 1, 0, false, "cwk:path_normalize", NULL));
+            s7_make_symbol(sc, "cwk:first-segment"),
+            s7_make_typed_function(sc, "cwk:first-segment", g_cwk_path_get_first_segment, 1, 0, false, "cwk:first-segment", NULL));
+
+  s7_define(sc, cur_env,
+            s7_make_symbol(sc, "cwk:normalize"),
+            s7_make_typed_function(sc, "cwk:normalize", g_cwk_path_normalize, 1, 0, false, "cwk:normalize", NULL));
 
   s7_define(sc, cur_env,
             s7_make_symbol(sc, "cwk:path-has-extension"),
             s7_make_typed_function(sc, "cwk:path-has-extension", cwk_cwk_path_has_extension, 1, 0, false, "bool cwk_path_has_extension(char*)", pl_bs));
 
   s7_define(sc, cur_env,
-            s7_make_symbol(sc, "cwk:path-get-basename"),
-            s7_make_typed_function(sc, "cwk:path-get-basename", g_cwk_path_get_basename, 1, 0, false, "cwk:path_get_basename", NULL));
+            s7_make_symbol(sc, "cwk:dirname"),
+            s7_make_typed_function(sc, "cwk:dirname", g_cwk_path_get_dirname, 1, 0, false, "cwk:dirname", NULL));
+
+  s7_define(sc, cur_env,
+            s7_make_symbol(sc, "cwk:basename"),
+            s7_make_typed_function(sc, "cwk:basename", g_cwk_path_get_basename, 1, 0, false, "cwk:basename", NULL));
 
   s7_define(sc, cur_env,
             s7_make_symbol(sc, "cwk:path-get-relative"),
